@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Community tool for VMware Private AI infrastructure sizing - Calculate requirements based on VMware Private AI Foundation Sizing Guide">
+    <meta name="keywords" content="VMware, AI, Sizing, Infrastructure, GPU, NVIDIA, Private AI, Calculator">
+    <meta name="author" content="StatelessPlatform.com">
+    <title>VMware Private AI Sizing Tool - Community Edition</title>
+
+    <!-- External Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Info Banner (Soft, Informative) -->
+    <div class="info-banner">
+        <p class="info-text">
+            ℹ️ <strong>Community Tool</strong> • Educational resource based on 
+            <a href="https://www.vmware.com/docs/sizing-ai-workloads-on-vcf" target="_blank" class="info-link">VMware's Official Sizing Guide</a> • 
+            Created by <a href="https://statelessplatform.com" target="_blank" class="info-link">StatelessPlatform</a> • 
+            For production, consult <a href="https://support.broadcom.com" target="_blank" class="info-link">Broadcom</a>
+        </p>
+    </div>
+
+    <!-- PDF Loading Overlay -->
+    <div class="pdf-loading-overlay" id="pdfLoadingOverlay">
+        <div class="pdf-loading-content">
+            <div class="spinner"></div>
+            <h3>Generating Executive PDF Report...</h3>
+            <p style="margin-top: 0.5rem;">Please wait while we create your comprehensive infrastructure analysis.</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div>
+                <div class="logo">VMware Private AI Sizing Tool</div>
+                <div class="logo-subtitle">Community Edition | Based on VMware Sizing Guide v9</div>
+            </div>
+            <div class="header-controls">
+                <div class="theme-toggle" onclick="toggleTheme()">
+                    <div class="theme-toggle-button">
+                        <span class="theme-icon">☀️</span>
+                    </div>
+                </div>
+                <button class="help-button" onclick="toggleHelp()">?</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-steps">
+                <div class="progress-line"></div>
+                <div class="progress-line-active" id="progressLine"></div>
+                <div class="progress-step">
+                    <div class="step-circle active" id="step1-circle">1</div>
+                    <div class="step-label active" id="step1-label">Template</div>
+                </div>
+                <div class="progress-step">
+                    <div class="step-circle" id="step2-circle">2</div>
+                    <div class="step-label" id="step2-label">Workload</div>
+                </div>
+                <div class="progress-step">
+                    <div class="step-circle" id="step3-circle">3</div>
+                    <div class="step-label" id="step3-label">Hardware</div>
+                </div>
+                <div class="progress-step">
+                    <div class="step-circle" id="step4-circle">4</div>
+                    <div class="step-label" id="step4-label">Results</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: Quick Templates -->
+        <div id="step1" class="section active">
+            <div class="card">
+                <h2 class="card-title">Choose a Starting Point</h2>
+                <p class="card-description">Select a pre-configured template or start from scratch with custom settings.</p>
+
+                <div class="templates-grid">
+                    <div class="template-card" onclick="loadTemplate('pilot')">
+                        <span class="template-badge">PILOT</span>
+                        <h3 class="template-title">Small Pilot (10 Users)</h3>
+                        <div class="template-specs">
+                            • 8B Model<br>
+                            • 10 Concurrent Requests<br>
+                            • RAG Chatbot<br>
+                            • NVIDIA L40s GPU
+                        </div>
+                    </div>
+
+                    <div class="template-card" onclick="loadTemplate('production')">
+                        <span class="template-badge">PRODUCTION</span>
+                        <h3 class="template-title">Medium Production (30 Users)</h3>
+                        <div class="template-specs">
+                            • 8B Model<br>
+                            • 30 Concurrent Requests<br>
+                            • RAG Chatbot<br>
+                            • NVIDIA H200 GPU
+                        </div>
+                    </div>
+
+                    <div class="template-card" onclick="loadTemplate('enterprise')">
+                        <span class="template-badge">ENTERPRISE</span>
+                        <h3 class="template-title">Large Enterprise (70B Model)</h3>
+                        <div class="template-specs">
+                            • 70B Model<br>
+                            • 30 Concurrent Requests<br>
+                            • RAG Chatbot<br>
+                            • NVIDIA H200 GPU
+                        </div>
+                    </div>
+
+                    <div class="template-card" onclick="loadTemplate('custom')">
+                        <span class="template-badge">CUSTOM</span>
+                        <h3 class="template-title">Custom Configuration</h3>
+                        <div class="template-specs">
+                            • Choose your own settings<br>
+                            • Flexible model selection<br>
+                            • Custom GPU options<br>
+                            • Tailored to your needs
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Workload Configuration -->
+        <div id="step2" class="section">
+            <div class="card">
+                <h2 class="card-title">Configure Your Workload</h2>
+                <p class="card-description">Define your AI application requirements and expected usage patterns.</p>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Deployment Type
+                        <span class="tooltip-icon" data-tooltip="Choose between new deployment or expanding existing infrastructure">i</span>
+                    </label>
+                    <div class="radio-group">
+                        <div class="radio-card">
+                            <input type="radio" name="deploymentType" value="new" id="deployNew" checked>
+                            <label for="deployNew" class="radio-label">New Deployment</label>
+                        </div>
+                        <div class="radio-card">
+                            <input type="radio" name="deploymentType" value="expansion" id="deployExpand">
+                            <label for="deployExpand" class="radio-label">Expansion</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Use Case
+                        <span class="tooltip-icon" data-tooltip="Select your primary AI application type">i</span>
+                    </label>
+                    <div class="radio-group">
+                        <div class="radio-card">
+                            <input type="radio" name="useCase" value="rag" id="useRAG" checked>
+                            <label for="useRAG" class="radio-label">RAG Chatbot</label>
+                        </div>
+                        <div class="radio-card">
+                            <input type="radio" name="useCase" value="inference" id="useInference">
+                            <label for="useInference" class="radio-label">Inference</label>
+                        </div>
+                        <div class="radio-card">
+                            <input type="radio" name="useCase" value="training" id="useTraining">
+                            <label for="useTraining" class="radio-label">Training</label>
+                        </div>
+                        <div class="radio-card">
+                            <input type="radio" name="useCase" value="gpu-service" id="useGPU">
+                            <label for="useGPU" class="radio-label">GPU-as-a-Service</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        LLM Model Size
+                        <span class="tooltip-icon" data-tooltip="Larger models have more knowledge but require more resources">i</span>
+                    </label>
+                    <select id="modelSize">
+                        <option value="8B">8B Parameters (Faster, Good for most use cases)</option>
+                        <option value="14B">14B Parameters (Balanced performance)</option>
+                        <option value="70B">70B Parameters (Most comprehensive, slower)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Concurrent Requests
+                        <span class="tooltip-icon" data-tooltip="Number of simultaneous users interacting with the model. ~5 users per concurrent request">i</span>
+                    </label>
+                    <div class="slider-container">
+                        <div class="slider-value">
+                            <span>Concurrent Requests:</span>
+                            <span class="slider-value-current" id="concurrentValue">10</span>
+                        </div>
+                        <input type="range" id="concurrentRequests" min="5" max="100" value="10" step="5" oninput="updateSlider()">
+                        <div class="slider-labels">
+                            <span>5 (~25 users)</span>
+                            <span>100 (~500 users)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="previousStep()">← Back</button>
+                    <button class="btn btn-primary" onclick="nextStep()">Continue →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Hardware Selection -->
+        <div id="step3" class="section">
+            <div class="card">
+                <h2 class="card-title">Select Hardware Preferences</h2>
+                <p class="card-description">Choose your GPU type and review recommended server specifications.</p>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        GPU Type
+                        <span class="tooltip-icon" data-tooltip="Select based on performance requirements and budget">i</span>
+                    </label>
+                    <select id="gpuType">
+                        <option value="H200">NVIDIA H200 (141GB, Best Performance) - Recommended</option>
+                        <option value="H100">NVIDIA H100 (80GB, High Performance)</option>
+                        <option value="L40s">NVIDIA L40s (48GB, Cost Effective)</option>
+                        <option value="A100">NVIDIA A100 (80GB, Mature Platform)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Existing VCF Management Domain
+                        <span class="tooltip-icon" data-tooltip="Do you already have VMware Cloud Foundation deployed?">i</span>
+                    </label>
+                    <div class="radio-group">
+                        <div class="radio-card">
+                            <input type="radio" name="hasVCF" value="no" id="vcfNo" checked>
+                            <label for="vcfNo" class="radio-label">No - New VCF Required</label>
+                        </div>
+                        <div class="radio-card">
+                            <input type="radio" name="hasVCF" value="yes" id="vcfYes">
+                            <label for="vcfYes" class="radio-label">Yes - Existing VCF</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="previousStep()">← Back</button>
+                    <button class="btn btn-primary" onclick="calculateResults()">Calculate Results →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Results -->
+        <div id="step4" class="section">
+            <div id="calculatingDiv" class="calculating" style="display:none;">
+                <div class="spinner"></div>
+                <h3>Calculating your infrastructure requirements...</h3>
+            </div>
+
+            <div id="resultsDiv" style="display:none;">
+                <div class="card">
+                    <h2 class="card-title">Your Infrastructure Requirements</h2>
+                    <p class="card-description">Based on your configuration, here are the recommended specifications.</p>
+
+                    <div class="results-grid">
+                        <div class="result-card">
+                            <h3>Management Domain</h3>
+                            <div class="result-value" id="mgmtCPU">-</div>
+                            <div class="result-label">CPU Cores</div>
+                            <div class="result-value" id="mgmtRAM">-</div>
+                            <div class="result-label">RAM (GB)</div>
+                            <div class="result-value" id="mgmtDisk">-</div>
+                            <div class="result-label">Storage (TB)</div>
+                        </div>
+
+                        <div class="result-card">
+                            <h3>Workload Domain</h3>
+                            <div class="result-value" id="wldCPU">-</div>
+                            <div class="result-label">CPU Cores</div>
+                            <div class="result-value" id="wldRAM">-</div>
+                            <div class="result-label">RAM (GB)</div>
+                            <div class="result-value" id="wldDisk">-</div>
+                            <div class="result-label">Storage (TB)</div>
+                        </div>
+
+                        <div class="result-card-alt">
+                            <h3>GPU Requirements</h3>
+                            <div class="result-value" id="gpuMemory">-</div>
+                            <div class="result-label">GPU Memory (GB)</div>
+                            <div class="result-value" id="gpuCount">-</div>
+                            <div class="result-label" id="gpuTypeLabel">GPUs Needed</div>
+                        </div>
+
+                        <div class="result-card-alt">
+                            <h3>Server Count</h3>
+                            <div class="result-value" id="serverCount">-</div>
+                            <div class="result-label">Total Servers</div>
+                            <div class="result-value" id="mgmtServers">-</div>
+                            <div class="result-label">Management</div>
+                            <div class="result-value" id="wldServers">-</div>
+                            <div class="result-label">Workload</div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Recommended Server Specification</h3>
+                    <table class="spec-table">
+                        <tr>
+                            <th>Component</th>
+                            <th>Specification</th>
+                        </tr>
+                        <tr>
+                            <td>CPU</td>
+                            <td class="spec-highlight" id="specCPU">-</td>
+                        </tr>
+                        <tr>
+                            <td>RAM</td>
+                            <td class="spec-highlight" id="specRAM">-</td>
+                        </tr>
+                        <tr>
+                            <td>GPUs</td>
+                            <td class="spec-highlight" id="specGPU">-</td>
+                        </tr>
+                        <tr>
+                            <td>Network</td>
+                            <td class="spec-highlight" id="specNetwork">-</td>
+                        </tr>
+                        <tr>
+                            <td>Storage</td>
+                            <td class="spec-highlight" id="specStorage">-</td>
+                        </tr>
+                    </table>
+
+                    <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Expected Performance</h3>
+                    <table class="spec-table">
+                        <tr>
+                            <th>Metric</th>
+                            <th>Value</th>
+                        </tr>
+                        <tr>
+                            <td>Time to First Token (TTFT)</td>
+                            <td class="spec-highlight" id="perfTTFT">-</td>
+                        </tr>
+                        <tr>
+                            <td>End-to-End Latency</td>
+                            <td class="spec-highlight" id="perfE2E">-</td>
+                        </tr>
+                        <tr>
+                            <td>Max Concurrent Users</td>
+                            <td class="spec-highlight" id="perfUsers">-</td>
+                        </tr>
+                    </table>
+
+                    <div class="export-buttons">
+                        <button class="btn-export btn-pdf" onclick="exportExecutivePDF()">
+                            📄 Executive PDF Report
+                        </button>
+                        <button class="btn-export" onclick="exportJSON()">
+                            💾 Save Configuration (JSON)
+                        </button>
+                        <button class="btn-export" onclick="exportText()">
+                            📝 Technical Report (TXT)
+                        </button>
+                        <button class="btn-export" onclick="shareConfig()">
+                            🔗 Share Configuration
+                        </button>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn btn-secondary" onclick="resetCalculator()">🔄 Start Over</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Panel -->
+    <div class="help-panel" id="helpPanel">
+        <div class="help-panel-content">
+            <button class="help-panel-close" onclick="toggleHelp()">×</button>
+
+            <h2 style="margin-bottom: 1.5rem;">Help & Documentation</h2>
+
+            <div class="help-section">
+                <h3>What is this tool?</h3>
+                <p>A community-built calculator that helps you estimate infrastructure requirements for VMware Private AI Foundation with NVIDIA, based on the official VMware sizing guide.</p>
+            </div>
+
+            <div class="help-section">
+                <h3>Key Terms</h3>
+                <p><strong>Concurrent Requests:</strong> Number of simultaneous users interacting with the AI model. Rule of thumb: ~5 users = 1 concurrent request.</p>
+                <p><strong>RAG:</strong> Retrieval Augmented Generation - enhances AI responses with external data.</p>
+                <p><strong>LLM Parameters:</strong> Model size (8B, 14B, 70B). Larger = more knowledge, more resources.</p>
+                <p><strong>TTFT:</strong> Time to First Token - how quickly the AI starts responding (target: < 0.2s).</p>
+            </div>
+
+            <div class="help-section">
+                <h3>Model Size Guide</h3>
+                <ul>
+                    <li><strong>8B:</strong> General chatbots, customer service, FAQs. Fast and efficient.</li>
+                    <li><strong>14B:</strong> Balanced performance for complex tasks.</li>
+                    <li><strong>70B:</strong> Research, technical support, complex reasoning.</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>GPU Selection</h3>
+                <ul>
+                    <li><strong>H200:</strong> 141GB memory, best performance, recommended for production.</li>
+                    <li><strong>H100:</strong> 80GB memory, high performance, proven platform.</li>
+                    <li><strong>L40s:</strong> 48GB memory, cost-effective for smaller workloads.</li>
+                    <li><strong>A100:</strong> 80GB memory, mature platform, widely supported.</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>Executive PDF Report</h3>
+                <p>The PDF report is designed for decision-makers and includes:</p>
+                <ul>
+                    <li>Executive summary with business context</li>
+                    <li>Strategic AI benefits and ROI insights</li>
+                    <li>Infrastructure specifications</li>
+                    <li>Performance projections</li>
+                    <li>Implementation roadmap</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>Official Resources</h3>
+                <ul>
+                    <li><a href="https://www.vmware.com/docs/sizing-ai-workloads-on-vcf" target="_blank">VMware Private AI Sizing Guide (Official)</a></li>
+                    <li><a href="https://blogs.vmware.com/cloud-foundation/2025/10/24/introducing-the-private-ai-sizing-guide/" target="_blank">VMware Blog Announcement</a></li>
+                    <li><a href="https://support.broadcom.com/group/ecx/productdownloads" target="_blank">Broadcom Support Portal</a></li>
+                    <li><a href="https://catalog.ngc.nvidia.com" target="_blank">NVIDIA NGC Catalog</a></li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>About This Tool</h3>
+                <p>This is a <strong>community-created educational resource</strong> built by <a href="https://statelessplatform.com" target="_blank">StatelessPlatform</a>. It implements calculations from the official VMware Private AI Foundation Sizing Guide v9.</p>
+                <p><strong>Note:</strong> For production deployments, always validate sizing with Broadcom and NVIDIA representatives, and refer to official documentation.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
