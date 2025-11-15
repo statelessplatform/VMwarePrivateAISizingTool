@@ -924,21 +924,7 @@ async function exportExecutivePDF() {
     }
 }
 
-// ==================== Configuration Sharing ====================
-function shareConfig() {
-    const configEncoded = btoa(JSON.stringify(config));
-    const url = `${window.location.origin}${window.location.pathname}#config=${configEncoded}`;
 
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(url).then(() => {
-            alert('Configuration link copied to clipboard! Share this link to let others view your sizing configuration.');
-        }).catch(() => {
-            prompt('Copy this link to share your configuration:', url);
-        });
-    } else {
-        prompt('Copy this link to share your configuration:', url);
-    }
-}
 
 // ==================== Reset ====================
 function resetCalculator() {
